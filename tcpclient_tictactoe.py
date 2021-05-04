@@ -1,29 +1,25 @@
-# Code for hosting a TicTacToe game
+# Code for being a client for a TicTacToe game
 # using TCP connection between client and server
-# playing as Player 1, using X for each move
+# playing as Player 2, using O for each move
 
 # importing the required libraries
-from socket import *
 import pygame as pg
 import sys
 import time
 from pygame.locals import *
+import socket
 
 # connection info
-serverPort = 12000
-serverSocket = socket(AF_INET,SOCK_STREAM)
-serverSocket.bind(("",serverPort))
-serverSocket.listen(1)
+HOST = 'localhost'
+PORTSERVER = 12000
 
-# BUILD UP CONNECTION FIRST
-print ("Waiting for Player 2...")
-connectionSocket, addr = serverSocket.accept()
-   
-   
+connectionSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+connectionSocket.connect((HOST,PORTSERVER))
+
 # declaring the global variables
 
-# boolean that represent current turn
-isMyTurn = True
+# for knowing current's Turn
+isMyTurn = False
   
 # storing the winner's value at
 # any instant of code
@@ -49,6 +45,7 @@ line_color = (0, 0, 0)
    
 # setting up a 3 * 3 board in canvas
 board = [[None]*3, [None]*3, [None]*3]
+  
   
 # initializing the pygame window
 pg.init()
@@ -104,9 +101,9 @@ def draw_status():
       
     if winner is None:
         if(isMyTurn):
-            message = "It's your turn"
-        else:   
-            message = "Player 2's turn"
+            message = "It's Your Turn"
+        else:
+            message = "Player 1's Turn"
         
     else:
         message = winner.upper() + " won !"
@@ -124,8 +121,11 @@ def draw_status():
     # creating a small block at the bottom of the main display
     screen.fill ((0, 0, 0), (0, 400, 500, 100))
     text_rect = text.get_rect(center =(width / 2, 500-50))
+
     screen.blit(text, text_rect)
+
     pg.display.update()
+
       
 def check_win():
     global board, winner, draw
@@ -198,8 +198,8 @@ def drawXO(row, col, XO):
     # setting up the required board 
     # value to display
     board[row-1][col-1] = XO
-
-    if(XO == 'x'):
+      
+    if(XO == 'x'):     
         # pasting x_img over the screen 
         # at a coordinate position of
         # (pos_y, posx) defined in the
@@ -245,29 +245,26 @@ def user_click():
     # we need to draw the images at
     # the desired positions
     if(row and col and board[row-1][col-1] is None):
-        drawXO(row, col, 'x')
+        drawXO(row, col, 'o')
         check_win()
         return row,col
 
     return None
-        
           
 def reset_game():
-    global board, winner, XO, draw
+    global board, winner, draw
     time.sleep(3)
-    isMyTurn = True
     draw = False
     winner = None
+    isMyTurn = False
     board = [[None]*3, [None]*3, [None]*3]
     game_initiating_window()
-
-# LOGIC HERE
 
 game_initiating_window()
    
 while(True):
     if(isMyTurn):
-        # clear all previous misclicks
+        # clear all previous missclicks
         pg.event.clear()
 
         # keep checking for a valid click
@@ -283,22 +280,22 @@ while(True):
                         reset_game()
 
                     # if click is valid
-                    if pos is not None: 
-                        isMyTurn = False    
+                    if pos is not None:
+                        isMyTurn = False
                         posStr = str(pos[0]) + str(pos[1])
 
-                        # tell Player 2 about the move
+                        # tell Player 1 about the move
                         connectionSocket.send(posStr.encode("UTF-8"))
                         break
-
-            pg.display.update()
-            CLOCK.tick(fps)
+                    
     else:
-        opponents_move = connectionSocket.recv(1024)
-        drawXO(opponents_move[0], opponents_move[1], 'o')
+        opponent_move = connectionSocket.recv(1024)
+        drawXO(opponent_move[0], opponent_move[1], 'x')
+        isMyTurn = True
         check_win()
         if(winner or draw):
             reset_game()
-        isMyTurn = True
-        
-    
+
+
+    pg.display.update()
+    CLOCK.tick(fps)
