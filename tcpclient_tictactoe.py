@@ -4,14 +4,17 @@
 
 # importing the required libraries
 import pygame as pg
+import pickle
 import sys
 import time
 from pygame.locals import *
 import socket
+import select
 
 # connection info
 HOST = 'localhost'
 PORTSERVER = 12000
+socket_buffer = []
 
 connectionSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 connectionSocket.connect((HOST,PORTSERVER))
@@ -62,7 +65,7 @@ screen = pg.display.set_mode((width, height + 100), 0, 32)
   
 # setting up a nametag for the 
 # game window
-pg.display.set_caption("My Tic Tac Toe")
+pg.display.set_caption("My Tic Tac Toe - Player 2")
    
 # loading the images as python object
 initiating_window = pg.image.load("images\logo2.png")
@@ -97,7 +100,7 @@ def draw_status():
       
     # getting the global variable draw
     # into action
-    global draw
+    global draw, isMyTurn
       
     if winner is None:
         if(isMyTurn):
@@ -252,7 +255,7 @@ def user_click():
     return None
           
 def reset_game():
-    global board, winner, draw
+    global board, winner, draw, isMyTurn
     time.sleep(3)
     draw = False
     winner = None
@@ -260,42 +263,78 @@ def reset_game():
     board = [[None]*3, [None]*3, [None]*3]
     game_initiating_window()
 
+# function to peek the buffer (non blocking purpose)
+def networkDataArrived():
+    """ Read from the socket, stuffing data into the buffer.
+        Returns True when a full packet has been read into the buffer """
+
+    global connectionSocket, socket_buffer
+    result = False
+    socks = [connectionSocket]
+
+    input, output, excep = select.select(
+        socks, [], [], 0.01)  # tiny read-timeout
+
+    # has any data arrived?
+    if (input.count(connectionSocket) > 0):
+        socket_buffer.append(connectionSocket.recv(1024))
+        # do we have a full packet?
+        if (len(socket_buffer) > 0):
+            result = True
+    return result
+
 game_initiating_window()
    
 while(True):
     if(isMyTurn):
+        print("ITS YOU TURN")
         # clear all previous missclicks
         pg.event.clear()
 
         # keep checking for a valid click
-        while(True):
+        while(True and isMyTurn):
             for event in pg.event.get():
                 if event.type == QUIT:
                     pg.quit()
                     sys.exit()
                 elif event.type == MOUSEBUTTONDOWN:
                     pos = user_click()
+                    # if click is valid
+                    if pos is not None:
+                        isMyTurn = False
+
+                        # tell Player 1 about the move
+                        data = pickle.dumps(pos)
+                        connectionSocket.send(data)
 
                     if(winner or draw):
                         reset_game()
 
-                    # if click is valid
-                    if pos is not None:
-                        isMyTurn = False
-                        posStr = str(pos[0]) + str(pos[1])
-
-                        # tell Player 1 about the move
-                        connectionSocket.send(posStr.encode("UTF-8"))
-                        break
-                    
+            pg.display.update()
+            CLOCK.tick(fps)
     else:
-        opponent_move = connectionSocket.recv(1024)
-        drawXO(opponent_move[0], opponent_move[1], 'x')
+        # print("CURRENTLY WAITING")
+        socket_buffer = []
+        data = None
+        if(networkDataArrived()):
+            print("arrived")
+            data = socket_buffer[0]
+        else :
+            pg.display.update()
+            CLOCK.tick(fps)
+            draw_status()
+            continue
+        # data = connectionSocket.recv(1024)
+        opponents_move = pickle.loads(data)
+        print(opponents_move)   
+        drawXO(opponents_move[0], opponents_move[1], 'x')
         isMyTurn = True
         check_win()
         if(winner or draw):
             reset_game()
-
+            print(isMyTurn)
 
     pg.display.update()
     CLOCK.tick(fps)
+    draw_status()
+    
