@@ -338,30 +338,28 @@ while(True):
     if(isMyTurn):
         print("ITS YOU TURN")
         # clear all previous misclicks
-        pg.event.clear()
 
         # keep checking for a valid click
-        while(True and isMyTurn):
-            for event in pg.event.get():
-                if event.type == QUIT:
-                    pg.quit()
-                    sys.exit()
-                elif event.type == MOUSEBUTTONDOWN:
-                    pos = user_click()
-                    # if click is valid
-                    if pos is not None:
-                        isMyTurn = False
-                        print("sent: ", pos)
-                        # tell Player 2 about the move
-                        data = pickle.dumps(pos)
-                        connectionSocket.send(data)
+        for event in pg.event.get():
+            if event.type == QUIT:
+                pg.quit()
+                sys.exit()
+            elif event.type == MOUSEBUTTONDOWN:
+                pos = user_click()
+                # if click is valid
+                if pos is not None:
+                    isMyTurn = False
+                    print("sent: ", pos)
+                    # tell Player 2 about the move
+                    data = pickle.dumps(pos)
+                    connectionSocket.send(data)
 
-                    if(winner or draw):
-                        reset_game()
+                if(winner or draw):
+                    reset_game()
 
-            pg.display.update()
-            CLOCK.tick(fps)
+                break
     
+    pg.event.clear()
     pg.display.update()
     CLOCK.tick(fps)
     draw_status()    

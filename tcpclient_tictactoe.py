@@ -327,39 +327,36 @@ start_new_thread(myThread2,(connectionSocket,))
 
 print("GAME STARTED!")
 
+# while not exiting
 while(True):
     if(isMyTurn):
         print("ITS YOU TURN")
         # clear all previous misclicks
-        pg.event.clear()
 
         # keep checking for a valid click
-        while(True and isMyTurn):
-            for event in pg.event.get():
-                if event.type == QUIT:
-                    pg.quit()
-                    sys.exit()
-                elif event.type == MOUSEBUTTONDOWN:
-                    pos = user_click()
-                    # if click is valid
-                    if pos is not None:
-                        isMyTurn = False
-                        print("sent: ", pos)
+        for event in pg.event.get():
+            if event.type == QUIT:
+                pg.quit()
+                sys.exit()
+            elif event.type == MOUSEBUTTONDOWN:
+                pos = user_click()
+                # if click is valid
+                if pos is not None:
+                    isMyTurn = False
+                    print("sent: ", pos)
+                    # tell Player 2 about the move
+                    data = pickle.dumps(pos)
+                    connectionSocket.send(data)
 
-                        # tell Player 2 about the move
-                        data = pickle.dumps(pos)
-                        connectionSocket.send(data)
+                if(winner or draw):
+                    reset_game()
 
-                    if(winner or draw):
-                        reset_game()
-            
-            pg.display.update()
-            CLOCK.tick(fps)
-                        
+                break
+    
+    pg.event.clear()
     pg.display.update()
     CLOCK.tick(fps)
-    draw_status()
-    
+    draw_status() 
 
 # # Wait for all threads to complete
 # for t in threads:
