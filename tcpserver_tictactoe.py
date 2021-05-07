@@ -42,6 +42,10 @@ connectionSocket, addr = serverSocket.accept()
 # boolean that represent current turn
 isMyTurn = True
 
+# showing every player's won rounds
+winner1 = 0
+winner2 = 0
+
 # storing the winner's value at
 # any instant of code
 winner = None
@@ -124,7 +128,7 @@ def draw_status():
 
     # getting the global variable draw
     # into action
-    global draw, isMyTurn
+    global draw, isMyTurn, winner1, winner2
 
     if winner is None:
         if(isMyTurn):
@@ -137,18 +141,28 @@ def draw_status():
     if draw:
         message = "Game Draw !"
 
+    message2 = "Player 1: " + str(winner1)
+    message3 = "Player 2: " + str(winner2)
     # setting a font object
     font = pg.font.Font(None, 30)
 
     # setting the font properties like
     # color and width of the text
     text = font.render(message, 1, (255, 255, 255))
+    text2 = font.render(message2, 1, (255, 255, 255))
+    text3 = font.render(message3, 1, (255, 255, 255))
 
     # copy the rendered message onto the board
     # creating a small block at the bottom of the main display
     screen.fill((0, 0, 0), (0, 400, 500, 100))
     text_rect = text.get_rect(center=(width / 2, 500-50))
+    text_rect2 = text2.get_rect(topleft=(width / 2 - 200, 500-100))
+    text_rect3 = text3.get_rect(topright=(width / 2 + 185, 500-100))
+
     screen.blit(text, text_rect)
+    screen.blit(text2, text_rect2)
+    screen.blit(text3, text_rect3)
+
     pg.display.update()
 
 
@@ -318,6 +332,13 @@ while(True):
                     connectionSocket.send(data)
 
                 if(winner or draw):
+                    if(winner == 'x'):
+                        print("player 1")
+                        winner1 += 1
+                    else:
+                        print("player 2")
+                        winner2 += 1
+
                     reset_game()
 
                 break
