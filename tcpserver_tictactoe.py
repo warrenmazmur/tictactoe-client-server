@@ -10,21 +10,58 @@ import sys
 import time
 from pygame.locals import *
 import select
+import threading
+from _thread import *
 
-# connection info
+
+def myThread2(socket):
+    global isMyTurn, winner, draw, isGameOver, connectionSocket
+    
+    while(True):
+        print("CURRENTLY WAITING")
+        data = connectionSocket.recv(1024)
+        opponents_move = pickle.loads(data)
+        print("received : ", opponents_move)
+        drawXO(opponents_move[0], opponents_move[1], 'o')
+        isMyTurn = True
+        check_win()
+        if(winner or draw):
+            reset_game()
+
+
+# class myThread (threading.Thread):
+#     # global isAccepted
+#     def __init__(self, threadID, name):
+#         threading.Thread.__init__(self)
+#         self.threadID = threadID
+#         self.name = name
+
+#     def run(self):
+#         global isMyTurn, winner, draw, connectionSocket, isGameOver
+
+#         while(True):
+#             print("CURRENTLY WAITING")
+#             data = connectionSocket.recv(1024)
+#             opponents_move = pickle.loads(data)
+#             print("received : ", opponents_move)
+#             drawXO(opponents_move[0], opponents_move[1], 'o')
+#             isMyTurn = True
+#             check_win()
+#             if(winner or draw):
+#                 reset_game()
+                
+
+# declaring the global variables
+
+
 serverPort = 12000
 serverSocket = socket(AF_INET, SOCK_STREAM)
 serverSocket.bind(("", serverPort))
 serverSocket.listen(1)
-socket_buffer = []
 
 # BUILD UP CONNECTION FIRST
 print("Waiting for Player 2...")
 connectionSocket, addr = serverSocket.accept()
-print("GAME STARTED!")
-
-
-# declaring the global variables
 
 # boolean that represent current turn
 isMyTurn = True
@@ -35,6 +72,9 @@ winner = None
 
 # to check if the game is a draw
 draw = None
+
+# to check if the game ended
+isGameOver = False
 
 # to set width of the game window
 width = 400
@@ -154,7 +194,7 @@ def check_win():
         if((board[0][col] == board[1][col] == board[2][col]) and (board[0][col] is not None)):
             winner = board[0][col]
             pg.draw.line(screen, (250, 0, 0), ((col + 1) * width / 3 - width / 6, 0),
-                          ((col + 1) * width / 3 - width / 6, height), 4)
+                         ((col + 1) * width / 3 - width / 6, height), 4)
             break
 
     # check for diagonal winners
@@ -272,29 +312,26 @@ def reset_game():
     board = [[None]*3, [None]*3, [None]*3]
     game_initiating_window()
 
+
 # LOGIC HERE
-
-# function to peek the buffer (non blocking purpose)
-def networkDataArrived():
-    """ Read from the socket, stuffing data into the buffer.
-        Returns True when a full packet has been read into the buffer """
-
-    global serverSocket, socket_buffer
-    result = False
-    socks = [serverSocket]
-
-    input, output, excep = select.select(
-        socks, [], [], 0.01)  # tiny read-timeout
-
-    # has any data arrived?
-    if (input.count(serverSocket) > 0):
-        socket_buffer.append(serverSocket.recv(1024))
-        # do we have a full packet?
-        if (len(socket_buffer) > 0):
-            result = True
-    return result
-
 game_initiating_window()
+
+start_new_thread(myThread2,(serverSocket,))
+
+# threadLock = threading.Lock()
+# threads = []
+
+# # Create new threads
+# thread1 = myThread(1, "Thread-1")
+
+# # Start new Threads
+# thread1.start()
+
+# # Add threads to thread list
+# threads.append(thread1)
+
+print("GAME STARTED!")
+
 
 # while not exiting
 while(True):
@@ -312,9 +349,9 @@ while(True):
                 elif event.type == MOUSEBUTTONDOWN:
                     pos = user_click()
                     # if click is valid
-                    if pos is not None: 
-                        isMyTurn = False    
-
+                    if pos is not None:
+                        isMyTurn = False
+                        print("sent: ", pos)
                         # tell Player 2 about the move
                         data = pickle.dumps(pos)
                         connectionSocket.send(data)
@@ -322,33 +359,13 @@ while(True):
                     if(winner or draw):
                         reset_game()
 
-
             pg.display.update()
             CLOCK.tick(fps)
-    else:
-        # print("CURRENTLY WAITING")
-        socket_buffer = []
-        data = None
-        if(networkDataArrived()):
-            print("arrived")
-            data = socket_buffer[0]
-        else :
-            pg.display.update()
-            CLOCK.tick(fps)
-            draw_status()
-            continue
-        # data = connectionSocket.recv(1024)
-        opponents_move = pickle.loads(data)
-        print(opponents_move)
-        drawXO(opponents_move[0], opponents_move[1], 'o')
-        isMyTurn = True
-        check_win()
-        if(winner or draw):
-            reset_game()
-            print(isMyTurn)
-
+    
     pg.display.update()
     CLOCK.tick(fps)
-    draw_status()
-        
-    
+    draw_status()    
+
+# # Wait for all threads to complete
+# for t in threads:
+#     t.join()
