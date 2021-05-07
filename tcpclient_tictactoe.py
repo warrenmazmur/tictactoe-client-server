@@ -24,6 +24,7 @@ def myThread2(socket):
         drawXO(opponents_move[0], opponents_move[1], 'x')
         isMyTurn = True
         check_win()
+        draw_status()
         if(winner or draw):
             reset_game()
 
@@ -117,7 +118,6 @@ def game_initiating_window():
 
 
 def draw_status():
-
     # getting the global variable draw
     # into action
     global draw, isMyTurn
@@ -313,6 +313,7 @@ while(True):
                     # tell Player 2 about the move
                     data = pickle.dumps(pos)
                     connectionSocket.send(data)
+                    draw_status() 
 
                 if(winner or draw):
                     reset_game()
@@ -322,4 +323,3 @@ while(True):
     pg.event.clear()
     pg.display.update()
     CLOCK.tick(fps)
-    draw_status() 
