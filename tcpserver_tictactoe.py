@@ -28,31 +28,7 @@ def myThread2(socket):
         if(winner or draw):
             reset_game()
 
-
-# class myThread (threading.Thread):
-#     # global isAccepted
-#     def __init__(self, threadID, name):
-#         threading.Thread.__init__(self)
-#         self.threadID = threadID
-#         self.name = name
-
-#     def run(self):
-#         global isMyTurn, winner, draw, connectionSocket, isGameOver
-
-#         while(True):
-#             print("CURRENTLY WAITING")
-#             data = connectionSocket.recv(1024)
-#             opponents_move = pickle.loads(data)
-#             print("received : ", opponents_move)
-#             drawXO(opponents_move[0], opponents_move[1], 'o')
-#             isMyTurn = True
-#             check_win()
-#             if(winner or draw):
-#                 reset_game()
-                
-
 # declaring the global variables
-
 
 serverPort = 12000
 serverSocket = socket(AF_INET, SOCK_STREAM)
@@ -318,20 +294,7 @@ game_initiating_window()
 
 start_new_thread(myThread2,(serverSocket,))
 
-# threadLock = threading.Lock()
-# threads = []
-
-# # Create new threads
-# thread1 = myThread(1, "Thread-1")
-
-# # Start new Threads
-# thread1.start()
-
-# # Add threads to thread list
-# threads.append(thread1)
-
 print("GAME STARTED!")
-
 
 # while not exiting
 while(True):
@@ -363,7 +326,3 @@ while(True):
     pg.display.update()
     CLOCK.tick(fps)
     draw_status()    
-
-# # Wait for all threads to complete
-# for t in threads:
-#     t.join()
